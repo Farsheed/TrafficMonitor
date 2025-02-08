@@ -10,8 +10,8 @@ This project presents an experimental view of network data, offering a fresh per
 ### Setup  
 1. Clone the repository:  
    ```bash
-   git clone https://github.com/yourrepo/network-visualization.git
-   cd network-visualization
+   git clone https://github.com/Farsheed/TrafficMonitor
+   cd TrafficGraph
    ```
 2. Install dependencies:  
    ```bash
