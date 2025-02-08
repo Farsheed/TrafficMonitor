@@ -3,6 +3,8 @@ const geoip = require('geoip-lite');
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+require('dotenv').config();
+const showLocalIPs = process.env.SHOW_LOCAL_IPS === 'true';  // Add this line
 const { isPromise } = require('util/types');
 const dns = require('dns').promises;
 
@@ -89,22 +91,11 @@ try {
                     const sourceIP = ip.saddr.toString();
                     const destIP = ip.daddr.toString();
                     
-                    // Skip private IP addresses
+                    // Skip private IP addresses unless enabled in environment
                     const isPrivate = isPrivateIP(sourceIP);
-                    // console.log('isPrivate: ', isPrivate);
-                    if (isPrivate) {
+                    if (isPrivate && !showLocalIPs) {
                         return;
                     }
-// Perform reverse DNS lookup
-// dns.reverse(sourceIP)
-//     .then(hostnames => {
-//         const domain = hostnames.length > 0 ? hostnames[0] : sourceIP;
-//         console.log('Domain:', domain);
-//     })
-//     .catch(error => {
-//         console.error('DNS lookup failed:', error.message);
-//         const domain = sourceIP; // Fallback to IP if lookup fails
-//     });
                     
                     const geo = geoip.lookup(sourceIP);
                     const country = geo ? geo.country : 'Unknown';
