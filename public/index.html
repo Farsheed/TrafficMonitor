@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Traffic Visualization</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 4800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow-y: visible;
+        }
+        #trafficCanvas {
+            width: 100%;
+            min-height: 600px;
+            margin-top: 20px;
+        }
+        @keyframes blink {
+            0% { opacity: 0.75 }
+            100% { opacity: 0.5; }
+        }
+        .active-traffic {
+            animation: blink 0.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Network Traffic Visualization</h1>
+        <canvas id="trafficCanvas"></canvas>
+    </div>
+
+    <script>
+        const socket = io();
+        const ctx = document.getElementById('trafficCanvas').getContext('2d');
+        const connections = new Map();
+        const historyPoints = new Map(); // Store historical data points
+        const maxPoints = 200; // Maximum number of points to show
+
+        function drawTraffic() {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            let currentY = 10;
+            const pointWidth = 5;
+            const spacing = 2;
+            const fixedHeight = 8; // Reduced from 30 to 10 (one-third)
+
+            // Use connections in their original order
+            Array.from(connections.entries()).forEach(([ip, conn]) => {
+                const label = `${conn.domain || ip}`;  // Base label without country/bandwidth
+                                const bandwidthInfo = ` (${conn.country})`;  // Bandwidth info to be bold
+                                
+                                ctx.font = '12px Arial';  // Regular font for IP
+                                const history = historyPoints.get(ip) || [];
+                                const hasRecentTraffic = history.length > 0 && history[history.length - 1].bytesPerSec > 0;
+                                ctx.fillStyle = hasRecentTraffic ? '#ff0000' : '#888888';
+                                if (hasRecentTraffic) {
+                                    ctx.save();
+                                    ctx.globalAlpha = 0.3 + (Math.sin(Date.now() / 500) + 1) / 2 * 0.7;
+                                }
+                                
+                                // Draw IP address in regular font
+                                ctx.fillText(label, 10, currentY + 8);
+                                
+                                // Draw bandwidth info in bold
+                                ctx.font = 'bold 12px Arial';
+                                ctx.fillText(bandwidthInfo, 10 + ctx.measureText(label).width, currentY + 8);
+                                
+                                if (hasRecentTraffic) {
+                                    ctx.restore();
+                                }
+
+                const startX = 250;  // Increased from 150 to 400 to add more space after IP labels
+
+                // Draw connecting lines between points
+                if (history.length > 1) {
+                    let currentColor = history[0].color;
+                    ctx.beginPath();
+                    let isDrawing = false;
+
+                    for (let i = 0; i < history.length; i++) {
+                        const x = startX + (i * (pointWidth + spacing));
+                        const y = currentY;
+
+                        if (history[i].bytesPerSec > 0) {
+                            // Start a new path if color changes
+                            if (history[i].color !== currentColor) {
+                                if (isDrawing) {
+                                    ctx.strokeStyle = currentColor;
+                                    ctx.lineWidth = pointWidth;
+                                    ctx.stroke();
+                                }
+                                currentColor = history[i].color;
+                                ctx.beginPath();
+                                isDrawing = false;
+                            }
+
+                            if (!isDrawing) {
+                                ctx.moveTo(x, y);
+                                isDrawing = true;
+                            }
+                            ctx.lineTo(x, y + fixedHeight);
+                            
+                            // If next point exists and has traffic, connect them
+                            if (i < history.length - 1 && history[i + 1].bytesPerSec > 0 && history[i + 1].color === currentColor) {
+                                ctx.lineTo(x + pointWidth + spacing, y + fixedHeight);
+                                ctx.lineTo(x + pointWidth + spacing, y);
+                            }
+                        } else {
+                            if (isDrawing) {
+                                ctx.strokeStyle = currentColor;
+                                ctx.lineWidth = pointWidth;
+                                ctx.stroke();
+                                ctx.beginPath();
+                                isDrawing = false;
+                            }
+                        }
+                    }
+
+                    // Draw any remaining path
+                    if (isDrawing) {
+                        ctx.strokeStyle = currentColor;
+                        ctx.lineWidth = pointWidth;
+                        ctx.stroke();
+                    }
+                }
+
+                // Draw points on top of the line, but only if there's traffic
+                history.forEach((point, index) => {
+                    if (point.bytesPerSec > 0) {
+                        ctx.fillStyle = point.color;
+                        ctx.fillRect(startX + (index * (pointWidth + spacing)), 
+                                    currentY, 
+                                    pointWidth, 
+                                    fixedHeight);
+                    }
+                });
+
+                currentY += 20; // Reduced spacing from 60 to 20 to maintain proportions
+            });
+        }
+
+        socket.on('trafficUpdate', (updates) => {
+            updates.forEach(update => {
+                // Update the existing connection data every time
+                connections.set(update.ip, {
+                    country: update.country,
+                    domain: update.domain,
+                    color: update.color
+                });
+
+                if (!historyPoints.has(update.ip)) {
+                    historyPoints.set(update.ip, []);
+                    resizeCanvas();
+                }
+
+                const history = historyPoints.get(update.ip);
+                history.push({
+                    color: update.color,
+                    bytesPerSec: update.bytesPerSec,
+                    timestamp: Date.now()
+                });
+
+                if (history.length > maxPoints) {
+                    history.shift();
+                }
+            });
+
+            // Update canvas height based on number of connections
+            const requiredHeight = Math.max(600, (connections.size * 20) + 40); // Reduced from 60 to 20
+            ctx.canvas.height = requiredHeight; // Always set the height, not just when increasing
+
+            drawTraffic();
+        });
+
+        // Initial canvas setup
+        function resizeCanvas() {
+            ctx.canvas.width = ctx.canvas.offsetWidth;
+            const requiredHeight = Math.max(600, (connections.size * 20) + 40); // Reduced from 40 to 20
+            ctx.canvas.height = requiredHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+    </script>
+</body>
+</html>

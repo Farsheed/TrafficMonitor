@@ -1,0 +1,24 @@
+{
+  "name": "traffic-graph",
+  "version": "0.0.1",
+  "description": "Network traffic visualization with country-based source tracking",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.0",
+    "chrome-remote-interface": "^0.33.2",
+    "dns": "^0.2.2",
+    "express": "^4.21.2",
+    "geoip-lite": "^1.4.10",
+    "pcap": "^3.1.0",
+    "socket.io": "^4.8.1"
+  },
+  "keywords": [
+    "Network",
+    "traffic"
+  ],
+  "author": "Farsheed Atef",
+  "license": "MIT"
+}
