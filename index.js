@@ -34,9 +34,9 @@ function isPrivateIP(ip) {
 }
 
 // Calculate bandwidth percentages
-function getBandwidthColor(bytesPerSec, maxBandwidth = 1000000) { // 1Mbps default max
+function getBandwidthColor(ip, bytesPerSec, maxBandwidth = 1000000) { // 1Mbps default max
     const percentage = (bytesPerSec / maxBandwidth) * 100;
-    console.log(bytesPerSec, ' | ', percentage);
+    console.log(ip, ': ', bytesPerSec, ' | ', percentage);
     // if (percentage <= 0.5) return 'WhiteSmoke';
     // if (percentage <= 5) return 'Gainsboro';
     // if (percentage <= 10) return 'lightgray';
@@ -54,12 +54,19 @@ function getBandwidthColor(bytesPerSec, maxBandwidth = 1000000) { // 1Mbps defau
     // if (percentage <= 80) return 'orange';
 
     if (bytesPerSec <= 50) return 'WhiteSmoke';
-    if (bytesPerSec <= 300) return '#BCD2E8';
-    if (bytesPerSec <= 1000) return '#91BAD6';
-    if (bytesPerSec <= 3000) return '#73A5C6';
-    if (bytesPerSec <= 5000) return '#528AAE';
-    if (bytesPerSec <= 10000) return '#2E5984';
-    if (bytesPerSec > 10000) return '#1E3F66';
+    // if (bytesPerSec <= 300) return '#BCD2E8';
+    // if (bytesPerSec <= 1000) return '#89B0D3';
+    // if (bytesPerSec <= 3000) return '#558EBD';
+    // if (bytesPerSec <= 5000) return '#2E6FA3';
+    // if (bytesPerSec <= 10000) return '#0B4870';
+    // if (bytesPerSec > 10000) return '#001933';
+    if (bytesPerSec <= 300) return '#F2B6B6';
+if (bytesPerSec <= 1000) return '#E08686';
+if (bytesPerSec <= 3000) return '#C75656';
+if (bytesPerSec <= 5000) return '#A32E2E';
+if (bytesPerSec <= 10000) return '#701B1B';
+if (bytesPerSec > 10000) return '#330000';
+
     return '#1E3F66';
 }
 // Function to update connection information
@@ -126,7 +133,7 @@ try {
                         domain: ip, // Use IP address as domain
                         country: `${conn.country} (${(conn.bytes/1024).toFixed(2)}KB/s)`, // Convert bytes to KB
                         bytesPerSec: conn.bytes,
-                        color: getBandwidthColor(conn.bytes)
+                        color: getBandwidthColor(ip, conn.bytes)
                     });
                     conn.bytes = 0; // Reset bytes for next interval
                 }

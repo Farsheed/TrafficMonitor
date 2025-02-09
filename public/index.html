@@ -58,28 +58,36 @@
 
             // Use connections in their original order
             Array.from(connections.entries()).forEach(([ip, conn]) => {
-                const label = `${conn.domain || ip}`;  // Base label without country/bandwidth
-                                const bandwidthInfo = ` (${conn.country})`;  // Bandwidth info to be bold
-                                
-                                ctx.font = '12px Arial';  // Regular font for IP
-                                const history = historyPoints.get(ip) || [];
-                                const hasRecentTraffic = history.length > 0 && history[history.length - 1].bytesPerSec > 0;
-                                ctx.fillStyle = hasRecentTraffic ? '#ff0000' : '#888888';
-                                if (hasRecentTraffic) {
-                                    ctx.save();
-                                    ctx.globalAlpha = 0.3 + (Math.sin(Date.now() / 500) + 1) / 2 * 0.7;
-                                }
-                                
-                                // Draw IP address in regular font
-                                ctx.fillText(label, 10, currentY + 8);
-                                
-                                // Draw bandwidth info in bold
-                                ctx.font = 'bold 12px Arial';
-                                ctx.fillText(bandwidthInfo, 10 + ctx.measureText(label).width, currentY + 8);
-                                
-                                if (hasRecentTraffic) {
-                                    ctx.restore();
-                                }
+                const label = `${conn.domain || ip}`;
+                const bandwidthInfo = ` ${conn.country}`;
+                
+                ctx.font = '12px Arial';
+                const history = historyPoints.get(ip) || [];
+                
+                // Check last few points to determine if there's actual recent activity
+                const lastFewPoints = history.slice(-3);
+                const hasRecentTraffic = lastFewPoints.some(point => 
+                    point.bytesPerSec > 0 && 
+                    (Date.now() - point.timestamp) < 2000 &&
+                    history.indexOf(point) === history.lastIndexOf(point)
+                );
+                
+                ctx.fillStyle = hasRecentTraffic ? '#ff0000' : '#888888';
+                if (hasRecentTraffic) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.3 + (Math.sin(Date.now() / 500) + 1) / 2 * 0.7;
+                }
+                
+                // Draw IP address in regular font
+                ctx.fillText(label, 10, currentY + 8);
+                
+                // Draw bandwidth info in bold
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText(bandwidthInfo, 10 + ctx.measureText(label).width, currentY + 8);
+                
+                if (hasRecentTraffic) {
+                    ctx.restore();
+                }
 
                 const startX = 250;  // Increased from 150 to 400 to add more space after IP labels
 
