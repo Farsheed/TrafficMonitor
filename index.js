@@ -4,7 +4,13 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 require('dotenv').config();
-const showLocalIPs = process.env.SHOW_LOCAL_IPS === 'true';  // Add this line
+const showLocalIPs = process.env.SHOW_LOCAL_IPS === 'true';
+
+// Add command line argument parsing for interface
+const args = process.argv.slice(2);
+const ifIndex = args.indexOf('--if');
+const networkInterface = ifIndex !== -1 && args[ifIndex + 1] ? args[ifIndex + 1] : 'en1';
+
 const { isPromise } = require('util/types');
 const dns = require('dns').promises;
 
@@ -86,8 +92,8 @@ function updateConnection(ip, country, bytes) {
 
 // Start packet capture
 try {
-    const pcapSession = pcap.createSession('en0', { filter: 'ip' });
-    console.log('Successfully created pcap session on en0 interface');
+    const pcapSession = pcap.createSession(networkInterface, { filter: 'ip' });
+    console.log(`Successfully created pcap session on ${networkInterface} interface`);
 
     pcapSession.on('packet', function (raw_packet) {
         try {

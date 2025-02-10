@@ -18,14 +18,15 @@ This project presents an experimental view of network data, offering a fresh per
    ```bash
    npm install
    ```
-3. Start the application:  
+3. Start the application (You will need previliaged access to run):  
    ```bash
-   sudo npm start
+   sudo npm start -- --if [interface]
    ```
    If you want to show the local IP addresses as well set the environment variable `SHOW_LOCAL_IP` to `true`:
    ```bash
-   sudo SHOW_LOCAL_IP=true npm start
+   sudo SHOW_LOCAL_IP=true npm start -- --if [interface]
    ```
+
 4. Open your browser at:  
    ```bash
    http://localhost:3000
